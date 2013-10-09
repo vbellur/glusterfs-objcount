@@ -31,6 +31,7 @@ enum {
         GF_QUOTA             = 1,
         GF_XTIME             = 2,
         GF_XTIME_GSYNC_FORCE = 4,
+        GF_COUNT             = 8,
 };
 
 /*initialize the local variable*/
@@ -111,6 +112,8 @@ struct marker_local{
         inode_contribution_t *contri;
 
         int xflag;
+        /* marker count specific */
+        int count_modify_value;
         dict_t *xdata;
 };
 typedef struct marker_local marker_local_t;
@@ -135,4 +138,12 @@ struct marker_conf{
 };
 typedef struct marker_conf marker_conf_t;
 
+int32_t
+marker_local_unref (marker_local_t *local);
+
+int32_t
+marker_trav_parent (loc_t *loc);
+
+marker_local_t *
+marker_local_ref (marker_local_t *local);
 #endif

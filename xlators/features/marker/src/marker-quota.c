@@ -2009,7 +2009,7 @@ int32_t
 mq_inspect_directory_xattr (xlator_t *this,
                             loc_t *loc,
                             dict_t *dict,
-                            struct iatt buf)
+                            struct iatt *buf)
 {
         int32_t               ret                 = 0;
         int8_t                dirty               = -1;
@@ -2101,7 +2101,7 @@ int32_t
 mq_inspect_file_xattr (xlator_t *this,
                        loc_t *loc,
                        dict_t *dict,
-                       struct iatt buf)
+                       struct iatt *buf)
 {
         int32_t               ret              = -1;
         uint64_t              contri_int       = 0, size = 0;
@@ -2127,7 +2127,7 @@ mq_inspect_file_xattr (xlator_t *this,
 
         LOCK (&ctx->lock);
         {
-                ctx->size = 512 * buf.ia_blocks;
+                ctx->size = 512 * buf->ia_blocks;
                 size = ctx->size;
         }
         UNLOCK (&ctx->lock);
@@ -2167,14 +2167,18 @@ int32_t
 mq_xattr_state (xlator_t *this,
                 loc_t *loc,
                 dict_t *dict,
-                struct iatt buf)
+                struct iatt *buf)
 {
-        if (buf.ia_type == IA_IFREG ||
-            buf.ia_type == IA_IFLNK) {
+        if (!buf)
+                goto out;
+
+        if (buf->ia_type == IA_IFREG ||
+            buf->ia_type == IA_IFLNK) {
                 mq_inspect_file_xattr (this, loc, dict, buf);
-        } else if (buf.ia_type == IA_IFDIR)
+        } else if (buf->ia_type == IA_IFDIR)
                 mq_inspect_directory_xattr (this, loc, dict, buf);
 
+out:
         return 0;
 }
 

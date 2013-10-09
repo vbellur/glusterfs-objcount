@@ -50,6 +50,7 @@
 
 char *marker_xattrs[] = {"trusted.glusterfs.quota.*",
                          "trusted.glusterfs.*.xtime",
+                         "trusted.glusterfs.count",
                          NULL};
 
 static char* posix_ignore_xattrs[] = {
