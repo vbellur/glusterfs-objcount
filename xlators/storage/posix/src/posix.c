@@ -3499,7 +3499,11 @@ _posix_handle_xattr_keyvalue_pair (dict_t *d, char *k, data_t *v,
         this = filler->this;
         inode = filler->inode;
 
+        if (GF_XATTROP_ADD_VALUE == optype)
+                v->len = sizeof (int64_t);
+
         count = v->len;
+
         array = GF_CALLOC (count, sizeof (char), gf_posix_mt_char);
 
         LOCK (&inode->lock);
@@ -3564,6 +3568,10 @@ _posix_handle_xattr_keyvalue_pair (dict_t *d, char *k, data_t *v,
                                      (int32_t *) v->data,
                                      v->len / 4);
                         break;
+
+                case GF_XATTROP_ADD_VALUE:
+                       *((int64_t *)array) += atol(v->data);
+                       break;
 
                 default:
                         gf_log (this->name, GF_LOG_ERROR,

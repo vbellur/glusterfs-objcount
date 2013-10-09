@@ -20,6 +20,7 @@
 #include "marker-quota.h"
 #include "marker-quota-helper.h"
 #include "marker-common.h"
+#include "marker-count.h"
 #include "byte-order.h"
 
 #define _GF_UID_GID_CHANGED 1
@@ -114,30 +115,35 @@ err:
 }
 
 int32_t
-marker_trav_parent (marker_local_t *local)
+marker_trav_parent (loc_t *loc)
 {
         int32_t ret = 0;
-        loc_t   loc = {0, };
+        loc_t   parloc = {0, };
         inode_t *parent = NULL;
         int8_t  need_unref = 0;
 
-        if (!local->loc.parent) {
-                parent = inode_parent (local->loc.inode, NULL, NULL);
+        if (!loc) {
+                ret = -1;
+                goto out;
+        }
+
+        if (!loc->parent) {
+                parent = inode_parent (loc->inode, NULL, NULL);
                 if (parent)
                         need_unref = 1;
         } else
-                parent = local->loc.parent;
+                parent = loc->parent;
 
-        ret = marker_inode_loc_fill (parent, &loc);
+        ret = marker_inode_loc_fill (parent, &parloc);
 
         if (ret < 0) {
                 ret = -1;
                 goto out;
         }
 
-        loc_wipe (&local->loc);
+        loc_wipe (loc);
 
-        local->loc = loc;
+        *loc = parloc;
 out:
         if (need_unref)
                 inode_unref (parent);
@@ -372,7 +378,7 @@ marker_specific_setxattr_cbk (call_frame_t *frame, void *cookie, xlator_t *this,
                 }
         }
 
-        ret = marker_trav_parent (local);
+        ret = marker_trav_parent (&local->loc);
 
         if (ret == -1) {
                 gf_log (this->name, GF_LOG_DEBUG, "Error occurred "
@@ -599,6 +605,9 @@ marker_create_cbk (call_frame_t *frame, void *cookie, xlator_t *this,
         if (priv->feature_enabled & GF_XTIME)
                 marker_xtime_update_marks (this, local);
 
+        if (priv->feature_enabled & GF_COUNT)
+                mc_update_count (local, 1);
+
 out:
         marker_local_unref (local);
 
@@ -812,6 +821,9 @@ marker_unlink_cbk (call_frame_t *frame, void *cookie, xlator_t *this,
 
         if (priv->feature_enabled & GF_XTIME)
                 marker_xtime_update_marks (this, local);
+
+        if (priv->feature_enabled & GF_COUNT)
+                mc_update_count (local, -1);
 out:
         marker_local_unref (local);
 
@@ -2381,9 +2393,12 @@ marker_lookup_cbk (call_frame_t *frame, void *cookie, xlator_t *this,
         priv = this->private;
 
         if (priv->feature_enabled & GF_QUOTA) {
-                mq_xattr_state (this, &local->loc, dict, *buf);
+                mq_xattr_state (this, &local->loc, dict, buf);
         }
 
+        if (priv->feature_enabled & GF_COUNT) {
+                //mc_xattr_state (this, &local->loc, dict, buf);
+        }
 out:
         marker_local_unref (local);
 
@@ -2648,6 +2663,14 @@ reconfigure (xlator_t *this, dict_t *options)
                         }
                 }
         }
+
+        data = dict_get (options, "count");
+        if (data) {
+                ret = gf_string2boolean (data->data, &flag);
+                if (ret == 0 && flag == _gf_true)
+                        priv->feature_enabled |= GF_COUNT;
+        }
+
 out:
         return ret;
 }
@@ -2712,6 +2735,13 @@ init (xlator_t *this)
                         if (ret == 0 && flag)
                                 priv->feature_enabled |= GF_XTIME_GSYNC_FORCE;
                 }
+        }
+
+        data = dict_get (options, "count");
+        if (data) {
+                ret = gf_string2boolean (data->data, &flag);
+                if (ret == 0 && flag == _gf_true)
+                        priv->feature_enabled |= GF_COUNT;
         }
 
  cont:

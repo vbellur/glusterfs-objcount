@@ -104,7 +104,7 @@ int32_t
 init_quota_priv (xlator_t *);
 
 int32_t
-mq_xattr_state (xlator_t *, loc_t *, dict_t *, struct iatt);
+mq_xattr_state (xlator_t *, loc_t *, dict_t *, struct iatt *);
 
 int32_t
 mq_set_inode_xattr (xlator_t *, loc_t *);
@@ -123,7 +123,7 @@ int32_t
 mq_rename_update_newpath (xlator_t *, loc_t *);
 
 int32_t
-mq_inspect_file_xattr (xlator_t *this, loc_t *loc, dict_t *dict, struct iatt buf);
+mq_inspect_file_xattr (xlator_t *this, loc_t *loc, dict_t *dict, struct iatt *buf);
 
 int32_t
 mq_forget (xlator_t *, quota_inode_ctx_t *);
